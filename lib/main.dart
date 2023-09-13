@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:contacts_service/contacts_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:animated_splash_screen/animated_splash_screen.dart';
+import 'package:contacts_service/contacts_service.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -18,11 +19,13 @@ class MyApp extends StatelessWidget {
         splash: Image.asset("assets/Dialmate.png"),
         nextScreen: MyHomePage(title: 'Flutter Contacts'), // Provide a valid title here
         splashTransition: SplashTransition.fadeTransition,
-        duration: 3000, // Adjust the duration as needed (in milliseconds)
+        duration: 3000,
+        backgroundColor: Colors.white,
+        // Adjust the duration as needed (in milliseconds)
       ),
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.blue),
       ),
     );
   }
@@ -51,12 +54,14 @@ class _MyHomePageState extends State<MyHomePage> {
       filterContacts();
     });
   }
+
   String? flattenPhoneNumber(String? phoneStr) {
     if (phoneStr == null) return null;
     return phoneStr.replaceAllMapped(RegExp(r'^(\+)|\D'), (Match m) {
       return m[0] == "+" ? "+" : "";
     });
   }
+
 
   filterContacts() {
     List<Contact> _contacts = List.from(contacts);
@@ -83,8 +88,6 @@ class _MyHomePageState extends State<MyHomePage> {
       contactsFiltered = _contacts;
     });
   }
-
-
 
   Future<void> fetchContacts() async {
     // Check if the permission is granted, if not, request it.
@@ -138,7 +141,6 @@ class _MyHomePageState extends State<MyHomePage> {
             switch (e.errorCode) {
               case FormOperationErrorCode.FORM_OPERATION_CANCELED:
               case FormOperationErrorCode.FORM_COULD_NOT_BE_OPEN:
-              // case FormOperationErrorCode.FORM_UNKNOWN_ERROR:
                 print(e.toString());
                 break;
               default:
@@ -186,14 +188,19 @@ class _MyHomePageState extends State<MyHomePage> {
                           ? contact.phones!.elementAt(0).value ?? 'No Phone Number'
                           : 'No Phone Number';
 
-                      return ListTile(
-                        title: Text(contact.displayName ?? ''),
-                        subtitle: Text(phoneNumber),
-                        leading: (contact.avatar != null && contact.avatar!.isNotEmpty)
-                            ? CircleAvatar(
-                          backgroundImage: MemoryImage(contact.avatar!),
-                        )
-                            : CircleAvatar(child: Text(contact.initials())),
+                      return GestureDetector(
+                        onTap: () {
+                          _updateContact(contact); // Handle tap to update contact
+                        },
+                        child: ListTile(
+                          title: Text(contact.displayName ?? ''),
+                          subtitle: Text(phoneNumber),
+                          leading: (contact.avatar != null && contact.avatar!.isNotEmpty)
+                              ? CircleAvatar(
+                            backgroundImage: MemoryImage(contact.avatar!),
+                          )
+                              : CircleAvatar(child: Text(contact.initials())),
+                        ),
                       );
                     }
                   } else {
@@ -208,14 +215,19 @@ class _MyHomePageState extends State<MyHomePage> {
                           ? contact.phones!.elementAt(0).value ?? 'No Phone Number'
                           : 'No Phone Number';
 
-                      return ListTile(
-                        title: Text(contact.displayName ?? ''),
-                        subtitle: Text(phoneNumber),
-                        leading: (contact.avatar != null && contact.avatar!.isNotEmpty)
-                            ? CircleAvatar(
-                          backgroundImage: MemoryImage(contact.avatar!),
-                        )
-                            : CircleAvatar(child: Text(contact.initials())),
+                      return GestureDetector(
+                        onTap: () {
+                          _updateContact(contact); // Handle tap to update contact
+                        },
+                        child: ListTile(
+                          title: Text(contact.displayName ?? ''),
+                          subtitle: Text(phoneNumber),
+                          leading: (contact.avatar != null && contact.avatar!.isNotEmpty)
+                              ? CircleAvatar(
+                            backgroundImage: MemoryImage(contact.avatar!),
+                          )
+                              : CircleAvatar(child: Text(contact.initials())),
+                        ),
                       );
                     }
                   }
@@ -226,5 +238,37 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
+  }
+
+  Future<void> _updateContact(Contact contact) async {
+    try {
+      Contact? updatedContact = await ContactsService.openExistingContact(contact);
+      if (updatedContact != null) {
+        // Handle the updated contact data (e.g., update it in your contact list)
+        // Handle the updated contact data (e.g., update it in your contact list)
+        updateContactInList(updatedContact);
+
+        // Show a SnackBar to indicate that the contact was updated successfully
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Contact updated successfully'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } on FormOperationException catch (e) {
+      // Handle any form operation errors here
+      print('Error updating contact: ${e.toString()}');
+    }
+  }
+
+  void updateContactInList(Contact updatedContact) {
+    // Find and update the contact in your contacts list
+    final index = contacts.indexWhere((c) => c.identifier == updatedContact.identifier);
+    if (index != -1) {
+      setState(() {
+        contacts[index] = updatedContact;
+      });
+    }
   }
 }
